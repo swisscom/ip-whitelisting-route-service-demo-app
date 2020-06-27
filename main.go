@@ -73,11 +73,11 @@ func (p *Proxy) ReverseProxy(rw http.ResponseWriter, req *http.Request) {
 	req.Header.Set("X-IP-Whitelisting-Proxy", "X-IP-Whitelisting-Proxy")
 
 	// X-CF-Forwarded-Url is required to determine the target of the request after it has been passed the route service
-	// https://docs.developer.swisscom.com/services/route-services.html#headers
+	// https://docs.cloudfoundry.org/services/route-services.html#headers
 	targetURL := req.Header.Get("X-CF-Forwarded-Url")
 	if len(targetURL) == 0 {
 		rw.WriteHeader(http.StatusBadRequest)
-		rw.Write([]byte("Bad Request"))
+		_, _ = rw.Write([]byte("Bad Request"))
 		return
 	}
 
@@ -85,33 +85,36 @@ func (p *Proxy) ReverseProxy(rw http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Println(err.Error())
 		rw.WriteHeader(http.StatusBadRequest)
-		rw.Write([]byte("Bad Request: " + err.Error()))
+		_, _ = rw.Write([]byte("Bad Request: " + err.Error()))
 		return
 	}
 
 	// block/allow IPs
 	var found bool
 	for _, allowedIP := range p.AllowedIPs {
-		if strings.Contains(req.Header.Get("X-Forwarded-For"), allowedIP) {
+		sourceIP := req.Header.Get("X-Forwarded-For")
+		ips := strings.SplitN(sourceIP, ", ", 1)
+		if len(ips) > 1 && len(ips[0]) > 0 {
+			sourceIP = ips[0]
+		}
+
+		if sourceIP == allowedIP {
 			found = true
 			break
 		}
 		if strings.Contains(allowedIP, "/") {
 			_, subnet, _ := net.ParseCIDR(allowedIP)
-			ips := strings.SplitN(req.Header.Get("X-Forwarded-For"), ", ", 1)
-			if len(ips) > 1 && len(ips[0]) > 0 {
-				ip := net.ParseIP(ips[0])
-				if subnet.Contains(ip) {
-					found = true
-					break
-				}
+			ip := net.ParseIP(sourceIP)
+			if subnet.Contains(ip) {
+				found = true
+				break
 			}
 		}
 	}
 	if !found {
 		log.Printf("blocking request from [%s]", req.Header.Get("X-Forwarded-For"))
 		rw.WriteHeader(http.StatusForbidden)
-		rw.Write([]byte("Forbidden"))
+		_, _ = rw.Write([]byte("Forbidden"))
 		return
 	}
 
