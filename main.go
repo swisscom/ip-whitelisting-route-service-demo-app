@@ -92,19 +92,22 @@ func (p *Proxy) ReverseProxy(rw http.ResponseWriter, req *http.Request) {
 	// block/allow IPs
 	var found bool
 	for _, allowedIP := range p.AllowedIPs {
-		if strings.Contains(req.Header.Get("X-Forwarded-For"), allowedIP) {
+		sourceIP := req.Header.Get("X-Forwarded-For")
+		ips := strings.SplitN(sourceIP, ", ", 1)
+		if len(ips) > 1 && len(ips[0]) > 0 {
+			sourceIP := ips[0]
+		}
+
+		if sourceIP == allowedIP {
 			found = true
 			break
 		}
 		if strings.Contains(allowedIP, "/") {
 			_, subnet, _ := net.ParseCIDR(allowedIP)
-			ips := strings.SplitN(req.Header.Get("X-Forwarded-For"), ", ", 1)
-			if len(ips) > 1 && len(ips[0]) > 0 {
-				ip := net.ParseIP(ips[0])
-				if subnet.Contains(ip) {
-					found = true
-					break
-				}
+			ip := net.ParseIP(sourceIP)
+			if subnet.Contains(ip) {
+				found = true
+				break
 			}
 		}
 	}
