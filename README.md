@@ -24,3 +24,6 @@ cf bind-route-service scapp.swisscom.com route-service-demo --hostname my-other-
 # check route if it's there
 cf routes | grep my-other-app-to-be-protected
 ```
+
+### Guide 
+See https://blog.jamesclonk.io/posts/ip-whitelisting-with-a-route-service/ for a more detailed explanation.
