@@ -93,9 +93,9 @@ func (p *Proxy) ReverseProxy(rw http.ResponseWriter, req *http.Request) {
 	var found bool
 	for _, allowedIP := range p.AllowedIPs {
 		sourceIP := req.Header.Get("X-Forwarded-For")
-		ips := strings.SplitN(sourceIP, ", ", 1)
+		ips := strings.SplitN(sourceIP, ",", 1)
 		if len(ips) > 1 && len(ips[0]) > 0 {
-			sourceIP = ips[0]
+			sourceIP = strings.TrimSpace(ips[0])
 		}
 
 		if sourceIP == allowedIP {
