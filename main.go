@@ -46,7 +46,7 @@ func NewProxy() *Proxy {
 	}
 	skipSSL, _ := strconv.ParseBool(skipSSLEnvValue)
 
-	// get list fo allowed IPs
+	// get list of allowed IPs
 	file, err := os.Open("ip-whitelist.conf")
 	if err != nil {
 		log.Fatalf("failed to open file: %s", err)
